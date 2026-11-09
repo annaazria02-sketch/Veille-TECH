@@ -1,5 +1,5 @@
 // region: US | EU | FR | UK | ASIA | MENA | GLOBAL     cat: defense | tech | cyber | ai
-// strict: "tech" = n'afficher que les articles d'informatique ; "def" = que ceux de défense
+// strict: "tech" = informatique seulement ; "def" = défense seulement ; "funding" = levées de fonds seulement
 export const FEEDS = [
   // --- Défense ---
   { name: "Defense News",        url: "https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml", region: "US",   cat: "defense" },
@@ -32,8 +32,9 @@ export const FEEDS = [
   { name: "Numerama",            url: "https://www.numerama.com/feed/",                                    region: "FR",   cat: "tech", lang: "fr", strict: "tech" },
   { name: "Le Monde Pixels",     url: "https://www.lemonde.fr/pixels/rss_full.xml",                        region: "FR",   cat: "tech", lang: "fr", strict: "tech" },
   { name: "SCMP Tech",           url: "https://www.scmp.com/rss/36/feed",                                  region: "ASIA", cat: "tech", strict: "tech" },
-  { name: "Nikkei Asia",         url: "https://asia.nikkei.com/rss/feed/nar",                              region: "ASIA", cat: "tech", strict: "tech" }
+  { name: "Nikkei Asia",         url: "https://asia.nikkei.com/rss/feed/nar",                              region: "ASIA", cat: "tech", strict: "tech" },
+  // --- Levées de fonds ---
   { name: "Crunchbase News",     url: "https://news.crunchbase.com/feed/",                                 region: "US",   cat: "tech", strict: "funding" },
   { name: "Tech.eu",             url: "https://tech.eu/feed/",                                             region: "EU",   cat: "tech", strict: "funding" },
-  { name: "Sifted",              url: "https://sifted.eu/feed", 
+  { name: "Sifted",              url: "https://sifted.eu/feed",                                            region: "EU",   cat: "tech", strict: "funding" }
 ];
