@@ -61,6 +61,8 @@ main{padding:24px 0 40px;display:grid;grid-template-columns:repeat(auto-fill,min
 .card h2 a{color:inherit;text-decoration:none}
 .card h2 a:hover{text-decoration:underline;text-decoration-color:var(--verm);text-decoration-thickness:2px;text-underline-offset:3px}
 .card p{margin:0;color:var(--mut);font-size:.88rem}
+.fund{align-self:flex-start;display:inline-flex;gap:8px;align-items:baseline;background:var(--ink);color:#fff;border-radius:8px;padding:5px 11px;font-size:.78rem;font-weight:600;letter-spacing:.02em}
+.fund b{color:#ff8a76;font-weight:700;letter-spacing:.1em;font-size:.66rem;text-transform:uppercase}
 .meta{margin-top:auto;padding-top:8px;border-top:1px solid var(--line);font-size:.76rem;color:var(--mut);display:flex;justify-content:space-between;gap:8px;font-weight:500}
 .card.new{border-color:var(--verm)}
 button.star{position:absolute;top:10px;right:12px;border:0;background:none;font-size:1.25rem;line-height:1;color:var(--mut);cursor:pointer;padding:4px}
@@ -111,11 +113,11 @@ footer{position:relative;z-index:1;max-width:1120px;margin:auto;padding:14px 20p
 
   <main id="grid"></main>
 </div>
-<footer>Titres et courts extraits fournis par les flux RSS des éditeurs ; cliquez pour lire l’article complet sur le site d’origine. Les favoris sont enregistrés dans votre navigateur. Actualisation automatique toutes les 60 secondes.</footer>
+<footer>Titres et courts extraits fournis par les flux RSS des éditeurs ; cliquez pour lire l’article complet sur le site d’origine. Les levées de fonds sont détectées automatiquement dans les titres et peuvent comporter des erreurs : vérifiez dans l’article. Les favoris sont enregistrés dans votre navigateur. Actualisation automatique toutes les 60 secondes.</footer>
 
 <script>
 const CATS={all:"Tout",defense:"Défense",cyber:"Cyber",ai:"IA",tech:"Informatique"};
-const NAV={...CATS,fav:"★ Favoris"};
+const NAV={...CATS,fund:"Levées de fonds",fav:"★ Favoris"};
 const REGS={all:"Monde",US:"États-Unis",EU:"Europe",FR:"France",UK:"Royaume-Uni",ASIA:"Asie",MENA:"Moyen-Orient",GLOBAL:"International"};
 const $=id=>document.getElementById(id);
 
@@ -162,18 +164,27 @@ $("copy").onclick=async()=>{
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
 function ago(d){const m=Math.max(1,Math.round((Date.now()-new Date(d))/6e4));return m<60?`il y a ${m} min`:m<1440?`il y a ${Math.round(m/60)} h`:`il y a ${Math.round(m/1440)} j`}
 
+function fundBadge(f){
+  if(!f)return"";
+  const parts=[f.amount,f.stage].filter(Boolean).map(esc).join(" · ");
+  return `<div class="fund"><b>Levée</b>${parts||"montant non précisé"}</div>`;
+}
 function card(n){
   const fav=isFav(n.url), isNew=!firstLoad&&!seen.has(n.url)&&st.cat!=="fav";
   return `<article class="card${isNew?" new":""}">
     <button class="star${fav?" on":""}" data-u="${esc(n.url)}" title="${fav?"Retirer des favoris":"Ajouter aux favoris"}" aria-label="Favori">${fav?"★":"☆"}</button>
     <span class="tag">${CATS[n.cat]||n.cat} <em>/ ${REGS[n.region]||n.region}${n.lang!=="en"?" / "+n.lang.toUpperCase():""}</em>${isNew?" · NOUVEAU":""}</span>
-    <h2><a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a></h2>${n.summary?`<p>${esc(n.summary)}</p>`:""}
+    <h2><a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a></h2>
+    ${fundBadge(n.funding)}
+    ${n.summary?`<p>${esc(n.summary)}</p>`:""}
     <div class="meta"><span>${esc(n.source)}</span><span>${ago(n.date)}</span></div></article>`;
 }
 function render(items){
   shown=items;
-  $("grid").innerHTML=items.length?items.map(card).join(""):
-    `<div class="empty">${st.cat==="fav"?"Aucun favori pour l’instant. Cliquez sur ☆ sur un article pour le retrouver ici.":"Aucun article pour l’instant."}</div>`;
+  const msg=st.cat==="fav"?"Aucun favori pour l’instant. Cliquez sur ☆ sur un article pour le retrouver ici."
+    :st.cat==="fund"?"Aucune levée de fonds détectée pour l’instant dans les articles récents."
+    :"Aucun article pour l’instant.";
+  $("grid").innerHTML=items.length?items.map(card).join(""):`<div class="empty">${msg}</div>`;
 }
 
 $("grid").onclick=e=>{
@@ -188,7 +199,8 @@ $("grid").onclick=e=>{
 async function load(){
   syncUrl();
   try{
-    const p=new URLSearchParams({cat:st.cat==="fav"?"all":st.cat,region:st.region,q:st.q,limit:120});
+    const p=new URLSearchParams({cat:(st.cat==="fav"||st.cat==="fund")?"all":st.cat,region:st.region,q:st.q,limit:120});
+    if(st.cat==="fund")p.set("funding","1");
     const r=await (await fetch("/api/news?"+p)).json();
     r.items.forEach(n=>current.set(n.url,n));
     $("upd").textContent=r.updated?`En direct · ${r.count} articles`:"Récupération…";
