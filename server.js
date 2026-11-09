@@ -22,10 +22,25 @@ const DEF_ALLOW = /\b(military|militaire\w*|army|armée\w*|navy|air force|defen[
 // Article d'une source informatique qui parle clairement de militaire → rangé en Défense
 const DEF_RECLASS = /\b(military|militaire\w*|pentagon\w*|missile\w*|warfare|army|armée|navy|air force|defen[sc]e|défense|nato|otan|weapon\w*|hypersonic\w*)\b/i;
 
-function accept(f, text) {
+// --- Détection des levées de fonds ---
+const AMOUNT = /(?:[$€£]\s?\d[\d.,]*\s?(?:million|billion|millions|milliards?|mn|bn|[mbk]\b|Md\b)?)|(?:\d[\d.,]*\s?(?:million|billion|millions|milliards?|M|Md)\s?(?:d[e'’]\s?)?(?:dollars?|euros?|USD|EUR|\$|€))/i;
+const STAGE = /\b(series [a-f]\+?|seed (?:round|funding)|pre-seed|funding round|venture (?:round|funding|capital)|unicorn|levée de fonds|a levé|ont levé)\b/i;
+const RAISE = /\b(raises?|raised|raising|lève|lèvent|secures?|lands?|closes?)\b/i;
+const NOT_FUND = /\b(contract\w*|award\w*|orders?|contrats?|marché|tender|budget|taxes?|rates?|prices?|forecast|estimates?)\b/i;
+
+function detectFunding(title, summary) {
+  const text = title + " " + summary;
+  const a = text.match(AMOUNT), s = text.match(STAGE);
+  const ok = (s || (RAISE.test(title) && a)) && !(NOT_FUND.test(title) && !s);
+  if (!ok) return null;
+  return { amount: a ? a[0].trim() : null, stage: s ? s[0].replace(/\b\w/g, (c) => c.toUpperCase()) : null };
+}
+
+function accept(f, text, fund) {
   if (BLOCK.test(text)) return false;
-  if (f.strict === "tech") return TECH_ALLOW.test(text) || AI_WORD.test(text);
+  if (f.strict === "tech") return TECH_ALLOW.test(text) || AI_WORD.test(text) || (fund && DEF_ALLOW.test(text));
   if (f.strict === "def") return DEF_ALLOW.test(text);
+  if (f.strict === "funding") return !!fund && (TECH_ALLOW.test(text) || AI_WORD.test(text) || DEF_ALLOW.test(text));
   return true;
 }
 
@@ -57,13 +72,14 @@ async function refresh() {
         const title = clean(i.title);
         const summary = clean(i.contentSnippet || i.summary || i.content || "").slice(0, 220);
         const text = title + " " + summary;
-        if (!accept(f, text)) continue;
+        const funding = detectFunding(title, summary);
+        if (!accept(f, text, funding)) continue;
         let d = new Date(i.isoDate || i.pubDate);
         if (isNaN(d) || d > new Date()) d = new Date();
         let cat = f.cat;
         if ((cat === "tech" || cat === "ai") && DEF_RECLASS.test(text)) cat = "defense";
         out.push({ title, url: i.link, summary, date: d.toISOString(),
-          source: f.name, region: f.region, cat, lang: f.lang || "en" });
+          source: f.name, region: f.region, cat, lang: f.lang || "en", funding });
       }
       status.push({ source: f.name, ok: true, n: r.items.length, kept: out.length });
       return out;
@@ -81,22 +97,23 @@ async function refresh() {
   }
   if (items.length) cache = { items: items.slice(0, MAX_ITEMS), updated: new Date().toISOString(), status };
   else cache.status = status;
-  console.log(`[refresh] ${items.length} articles, ${status.filter((s) => s.ok).length}/${FEEDS.length} flux OK`);
+  console.log(`[refresh] ${items.length} articles (${items.filter((i) => i.funding).length} levées), ${status.filter((s) => s.ok).length}/${FEEDS.length} flux OK`);
 }
 
 const app = express();
 app.get("/api/news", (req, res) => {
-  const { cat, region, lang, q, limit = 100 } = req.query;
+  const { cat, region, lang, q, funding, limit = 100 } = req.query;
   const needle = q ? String(q).toLowerCase() : null;
   const items = cache.items.filter((i) =>
     (!cat || cat === "all" || i.cat === cat) &&
     (!region || region === "all" || i.region === region) &&
     (!lang || lang === "all" || i.lang === lang) &&
+    (!funding || i.funding) &&
     (!needle || (i.title + " " + i.summary + " " + i.source).toLowerCase().includes(needle))
   ).slice(0, Math.min(Number(limit) || 100, 300));
   res.json({ updated: cache.updated, count: items.length, items });
 });
-app.get("/api/health", (_, res) => res.json({ updated: cache.updated, total: cache.items.length, feeds: cache.status }));
+app.get("/api/health", (_, res) => res.json({ updated: cache.updated, total: cache.items.length, funding: cache.items.filter((i) => i.funding).length, feeds: cache.status }));
 app.use(express.static("public"));
 
 app.listen(PORT, () => console.log(`http://localhost:${PORT}`));
