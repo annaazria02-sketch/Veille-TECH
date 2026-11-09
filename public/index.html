@@ -39,10 +39,13 @@ h1{margin:0;font-family:"Anton",Impact,"Arial Narrow",sans-serif;font-weight:400
   font-size:clamp(2.7rem,9.5vw,6.6rem);line-height:.98;letter-spacing:-.005em}
 h1 em{font-style:normal;color:var(--verm)}
 .sub{max-width:560px;margin:22px auto 0;color:rgba(11,22,48,.78);font-size:1rem}
-.search{max-width:520px;margin:28px auto 0}
-input{width:100%;padding:13px 18px;border:1px solid rgba(11,22,48,.4);border-radius:12px;background:rgba(255,255,255,.7);color:var(--ink);font:inherit;outline:0;text-align:center}
+.search{max-width:620px;margin:28px auto 0;display:flex;gap:10px}
+input{flex:1;min-width:0;padding:13px 18px;border:1px solid rgba(11,22,48,.4);border-radius:12px;background:rgba(255,255,255,.7);color:var(--ink);font:inherit;outline:0;text-align:center}
 input:focus{box-shadow:0 0 0 2px var(--verm);background:#fff}
 input::placeholder{color:var(--mut)}
+button.copy{flex:none;border:1px solid rgba(11,22,48,.4);background:rgba(255,255,255,.35);border-radius:12px;padding:0 16px;font:inherit;font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);cursor:pointer;white-space:nowrap}
+button.copy:hover{background:rgba(255,255,255,.8)}
+button.copy.ok{background:var(--ink);color:#fff;border-color:var(--ink)}
 #regs{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:18px}
 button.pill{border:1px solid rgba(11,22,48,.3);background:rgba(255,255,255,.35);border-radius:99px;padding:5px 14px;font:inherit;font-size:.8rem;font-weight:500;color:var(--ink);cursor:pointer}
 button.pill:hover{background:rgba(255,255,255,.75)}
@@ -50,9 +53,9 @@ button.pill.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 
 /* Articles */
 main{padding:24px 0 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.card{background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:16px;padding:18px 18px 14px;display:flex;flex-direction:column;gap:9px;transition:transform .15s,box-shadow .15s}
+.card{position:relative;background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:16px;padding:18px 18px 14px;display:flex;flex-direction:column;gap:9px;transition:transform .15s,box-shadow .15s}
 .card:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(11,22,48,.1);background:#fff}
-.tag{font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--verm)}
+.tag{font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--verm);padding-right:30px}
 .tag em{font-style:normal;color:var(--mut);font-weight:600}
 .card h2{margin:0;font-size:1.04rem;font-weight:600;line-height:1.3;letter-spacing:-.01em}
 .card h2 a{color:inherit;text-decoration:none}
@@ -60,6 +63,9 @@ main{padding:24px 0 40px;display:grid;grid-template-columns:repeat(auto-fill,min
 .card p{margin:0;color:var(--mut);font-size:.88rem}
 .meta{margin-top:auto;padding-top:8px;border-top:1px solid var(--line);font-size:.76rem;color:var(--mut);display:flex;justify-content:space-between;gap:8px;font-weight:500}
 .card.new{border-color:var(--verm)}
+button.star{position:absolute;top:10px;right:12px;border:0;background:none;font-size:1.25rem;line-height:1;color:var(--mut);cursor:pointer;padding:4px}
+button.star:hover{color:var(--verm)}
+button.star.on{color:var(--verm)}
 .empty{grid-column:1/-1;text-align:center;color:var(--mut);padding:50px}
 footer{position:relative;z-index:1;max-width:1120px;margin:auto;padding:14px 20px 36px;color:var(--mut);font-size:.74rem;border-top:1px solid var(--line)}
 
@@ -67,6 +73,8 @@ footer{position:relative;z-index:1;max-width:1120px;margin:auto;padding:14px 20p
   nav{grid-template-columns:1fr auto}
   #cats{grid-column:1/-1;order:3;justify-content:flex-start}
   .hero{padding-top:44px}
+  .search{flex-wrap:wrap}
+  button.copy{flex:1 1 100%;padding:11px 16px}
 }
 </style>
 </head>
@@ -94,39 +102,105 @@ footer{position:relative;z-index:1;max-width:1120px;margin:auto;padding:14px 20p
   <section class="hero">
     <h1>Tech &amp; Défense.<br><em>Le monde</em> en direct.</h1>
     <p class="sub">Informatique, cyber, IA et defense tech : les actualités des meilleures sources mondiales, mises à jour automatiquement.</p>
-    <div class="search"><input id="q" type="search" placeholder="Rechercher : drones, hypersonique, puces, ransomware…"></div>
+    <div class="search">
+      <input id="q" type="search" placeholder="Rechercher : drones, hypersonique, puces, ransomware…">
+      <button class="copy" id="copy" type="button">Copier le lien</button>
+    </div>
     <div id="regs"></div>
   </section>
 
   <main id="grid"></main>
 </div>
-<footer>Titres et courts extraits fournis par les flux RSS des éditeurs ; cliquez pour lire l’article complet sur le site d’origine. Actualisation automatique toutes les 60 secondes.</footer>
+<footer>Titres et courts extraits fournis par les flux RSS des éditeurs ; cliquez pour lire l’article complet sur le site d’origine. Les favoris sont enregistrés dans votre navigateur. Actualisation automatique toutes les 60 secondes.</footer>
 
 <script>
 const CATS={all:"Tout",defense:"Défense",cyber:"Cyber",ai:"IA",tech:"Informatique"};
+const NAV={...CATS,fav:"★ Favoris"};
 const REGS={all:"Monde",US:"États-Unis",EU:"Europe",FR:"France",UK:"Royaume-Uni",ASIA:"Asie",MENA:"Moyen-Orient",GLOBAL:"International"};
-const st={cat:"all",region:"all",q:""}; let firstLoad=true, seen=new Set();
 const $=id=>document.getElementById(id);
+
+/* État initial lu dans l'adresse (liens partageables) */
+const P=new URLSearchParams(location.search);
+const st={cat:NAV[P.get("cat")]?P.get("cat"):"all", region:REGS[P.get("region")]?P.get("region"):"all", q:P.get("q")||""};
+$("q").value=st.q;
+function syncUrl(){
+  const p=new URLSearchParams();
+  if(st.cat!=="all")p.set("cat",st.cat);
+  if(st.region!=="all")p.set("region",st.region);
+  if(st.q)p.set("q",st.q);
+  try{history.replaceState(null,"",p.toString()?"?"+p:location.pathname)}catch(e){}
+}
+
+/* Favoris (stockés dans le navigateur) */
+const KEY="veille:favs";
+function loadFavs(){try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}}
+let favs=loadFavs();
+function saveFavs(){try{localStorage.setItem(KEY,JSON.stringify(favs))}catch(e){}}
+const isFav=u=>favs.some(f=>f.url===u);
+function updFavLabel(){const b=document.querySelector('#cats [data-k="fav"]');if(b)b.textContent="★ Favoris"+(favs.length?` (${favs.length})`:"")}
+
+let current=new Map(), firstLoad=true, seen=new Set(), shown=[];
+
 const build=(el,map,key,cls)=>{
   el.innerHTML=Object.entries(map).map(([k,v])=>`<button class="${cls}${st[key]===k?" on":""}" data-k="${k}">${v}</button>`).join("");
   el.onclick=e=>{const b=e.target.closest("button");if(!b)return;st[key]=b.dataset.k;
     el.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.k===b.dataset.k));load()}};
-build($("cats"),CATS,"cat","link");build($("regs"),REGS,"region","pill");
+build($("cats"),NAV,"cat","link");build($("regs"),REGS,"region","pill");updFavLabel();
+
 let t;$("q").oninput=e=>{clearTimeout(t);t=setTimeout(()=>{st.q=e.target.value;load()},250)};
+
+$("copy").onclick=async()=>{
+  syncUrl();const b=$("copy");let ok=false;
+  try{await navigator.clipboard.writeText(location.href);ok=true}catch(e){
+    const i=document.createElement("input");i.value=location.href;document.body.appendChild(i);i.select();
+    try{ok=document.execCommand("copy")}catch(_){}i.remove();
+  }
+  b.textContent=ok?"Lien copié ✓":"Copiez l’adresse du navigateur";b.classList.toggle("ok",ok);
+  setTimeout(()=>{b.textContent="Copier le lien";b.classList.remove("ok")},2200);
+};
+
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
 function ago(d){const m=Math.max(1,Math.round((Date.now()-new Date(d))/6e4));return m<60?`il y a ${m} min`:m<1440?`il y a ${Math.round(m/60)} h`:`il y a ${Math.round(m/1440)} j`}
+
+function card(n){
+  const fav=isFav(n.url), isNew=!firstLoad&&!seen.has(n.url)&&st.cat!=="fav";
+  return `<article class="card${isNew?" new":""}">
+    <button class="star${fav?" on":""}" data-u="${esc(n.url)}" title="${fav?"Retirer des favoris":"Ajouter aux favoris"}" aria-label="Favori">${fav?"★":"☆"}</button>
+    <span class="tag">${CATS[n.cat]||n.cat} <em>/ ${REGS[n.region]||n.region}${n.lang!=="en"?" / "+n.lang.toUpperCase():""}</em>${isNew?" · NOUVEAU":""}</span>
+    <h2><a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a></h2>${n.summary?`<p>${esc(n.summary)}</p>`:""}
+    <div class="meta"><span>${esc(n.source)}</span><span>${ago(n.date)}</span></div></article>`;
+}
+function render(items){
+  shown=items;
+  $("grid").innerHTML=items.length?items.map(card).join(""):
+    `<div class="empty">${st.cat==="fav"?"Aucun favori pour l’instant. Cliquez sur ☆ sur un article pour le retrouver ici.":"Aucun article pour l’instant."}</div>`;
+}
+
+$("grid").onclick=e=>{
+  const b=e.target.closest(".star");if(!b)return;
+  const u=b.dataset.u;
+  if(isFav(u)) favs=favs.filter(f=>f.url!==u);
+  else{const it=current.get(u)||shown.find(x=>x.url===u);if(it)favs.unshift(it)}
+  saveFavs();updFavLabel();
+  if(st.cat==="fav") load(); else{b.classList.toggle("on",isFav(u));b.textContent=isFav(u)?"★":"☆"}
+};
+
 async function load(){
+  syncUrl();
   try{
-    const p=new URLSearchParams({cat:st.cat,region:st.region,q:st.q,limit:120});
+    const p=new URLSearchParams({cat:st.cat==="fav"?"all":st.cat,region:st.region,q:st.q,limit:120});
     const r=await (await fetch("/api/news?"+p)).json();
+    r.items.forEach(n=>current.set(n.url,n));
     $("upd").textContent=r.updated?`En direct · ${r.count} articles`:"Récupération…";
-    $("grid").innerHTML=r.items.length?r.items.map(n=>{
-      const isNew=!firstLoad&&!seen.has(n.url);
-      return `<article class="card${isNew?" new":""}"><span class="tag">${CATS[n.cat]||n.cat} <em>/ ${REGS[n.region]||n.region}${n.lang!=="en"?" / "+n.lang.toUpperCase():""}</em>${isNew?" · NOUVEAU":""}</span>
-      <h2><a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.title)}</a></h2>${n.summary?`<p>${esc(n.summary)}</p>`:""}
-      <div class="meta"><span>${esc(n.source)}</span><span>${ago(n.date)}</span></div></article>`}).join(""):'<div class="empty">Aucun article pour l’instant.</div>';
+    if(st.cat==="fav"){
+      const needle=st.q.toLowerCase();
+      render(favs.filter(f=>(st.region==="all"||f.region===st.region)&&(!needle||(f.title+" "+f.summary+" "+f.source).toLowerCase().includes(needle))));
+    }else render(r.items);
     r.items.forEach(n=>seen.add(n.url));firstLoad=false;
-  }catch(e){$("upd").textContent="Serveur injoignable"}
+  }catch(e){
+    $("upd").textContent="Serveur injoignable";
+    if(st.cat==="fav") render(favs);
+  }
 }
 load();setInterval(load,60000);
 </script>
