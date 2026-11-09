@@ -33,4 +33,7 @@ export const FEEDS = [
   { name: "Le Monde Pixels",     url: "https://www.lemonde.fr/pixels/rss_full.xml",                        region: "FR",   cat: "tech", lang: "fr", strict: "tech" },
   { name: "SCMP Tech",           url: "https://www.scmp.com/rss/36/feed",                                  region: "ASIA", cat: "tech", strict: "tech" },
   { name: "Nikkei Asia",         url: "https://asia.nikkei.com/rss/feed/nar",                              region: "ASIA", cat: "tech", strict: "tech" }
+  { name: "Crunchbase News",     url: "https://news.crunchbase.com/feed/",                                 region: "US",   cat: "tech", strict: "funding" },
+  { name: "Tech.eu",             url: "https://tech.eu/feed/",                                             region: "EU",   cat: "tech", strict: "funding" },
+  { name: "Sifted",              url: "https://sifted.eu/feed", 
 ];
